@@ -2,19 +2,103 @@
 
 
 ## Loading and preprocessing the data
+```{r}
+library(ggplot2)
+library(lattice)
+
+activitydata <- read.csv("activity.csv")
+```
+
+## Part I Histogram, Mean, and Median 
+
+### Histogram
+```{r}
+mysum <- aggregate(activitydata$steps, list(Date = activitydata$date),sum)
+
+names(mysum)[names(mysum)=="x"] <- "Sum"
+hist(mysum$Sum,main="Histogram of the Number of Steps taken each Day", xlab="Number of Steps taken in a Day" )
+
+mymean <- mean(mysum$Sum,na.rm=TRUE)
+mymedian <- median(mysum$Sum, na.rm=TRUE)
+```
+
+### Mean
+
+#### The mean number of steps each day is: `r mymean`
+
+### Median
+
+#### The median number of steps each day is: `r mymedian`
 
 
+## Part II What is the average daily activity pattern?
 
-## What is mean total number of steps taken per day?
-
-
-
-## What is the average daily activity pattern?
-
-
-
-## Imputing missing values
+```{r}
+myavgdaily <- aggregate(activitydata$steps, list(Interval = activitydata$interval), mean,na.rm=TRUE)
+plot(myavgdaily$x, myavgdaily$interval, type="l", main= "Average Daily Activity Pattern", ylab="AVG Steps Across all Days", xlab="5 Minute Interval")
+```
 
 
+```{r}
+myavgdailymax <- max(myavgdaily$x)
+whichrow <-which(myavgdaily$x == max(myavgdaily$x))
+myavgdailymaxinterval <- myavgdaily$Interval[whichrow]
 
-## Are there differences in activity patterns between weekdays and weekends?
+```
+
+#### The Interval that has the Maximum number of steps is `r myavgdailymaxinterval` which has a value of `r myavgdailymax`. 
+
+
+## Part III Inputing missing values
+
+```{r}
+incompletecases <- nrow(activitydata) - sum(complete.cases(activitydata))
+```
+
+#### The total number of rows with missing values is `r incompletecases`.
+
+### The strategy for replacing missing values will be to replace each missing missing value by the average across all Intervals and Days.
+```{r}
+averageall <- mean (activitydata$steps, na.rm=TRUE)
+activitydata$steps[is.na(activitydata$steps)] <- averageall
+```
+
+### New Histogram, Mean, and Median 
+
+```{r}
+mysum <- aggregate(activitydata$steps, list(Date = activitydata$date),sum)
+names(mysum)[names(mysum)=="x"] <- "Sum"
+hist(mysum$Sum,main="Histogram of the New Number of Steps taken each Day", xlab="Number of Steps taken in a Day" )
+
+mymean <- mean(mysum$Sum,na.rm=TRUE)
+mymedian <- median(mysum$Sum, na.rm=TRUE)
+```
+
+### Mean
+
+#### The new mean number of steps each day is: `r mymean`.
+
+### Median
+
+#### The new median number of steps each day is: `r mymedian`
+
+
+These new mean and median have not changed.The new histogram has higher frequencey for number of steps between 10000 and 15000.
+
+## Part IV Are there differences in activity patterns between weekdays and weekends?
+
+
+```{r }
+activitydatanew=aggregate(steps~interval+date,activitydata,mean)
+
+activitydatanew$day=ifelse(as.POSIXlt(as.Date(activitydatanew$date))$wday%%6==0,
+                          "weekend","weekday")
+
+activitydatanew$day=factor(activitydatanew$day,levels=c("weekday","weekend"))
+
+xyplot(steps~interval|factor(day),data=activitydatanew,aspect=1/2,type="l")
+```
+
+#### The weekend numbers are somewhat left skewed with more activity mid to end of day and weekday numbers are more evenly distribtured with higher levels at the beginning of the day.  
+
+
